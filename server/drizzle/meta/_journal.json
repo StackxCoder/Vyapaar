@@ -1,0 +1,13 @@
+{
+  "version": "5",
+  "dialect": "pg",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1776623722275,
+      "tag": "0000_sloppy_daimon_hellstrom",
+      "breakpoints": true
+    }
+  ]
+}
