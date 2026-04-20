@@ -2,64 +2,12 @@
 // Cleaned up imports
 import { daysDiff, toDateOnly, isToday } from '../utils/dateUtils';
 
-const NEW_PRODUCTS_DATA = [
-  { id: 'p1', name: 'House Wire 1.5mm', category: 'Wire', labelSpec: 'FR PVC Wire 1.5 sq mm ISI', actualSpec: '1.3 sq mm FR', unit: 'coil', purchasePrice: 850, sellingPrice: 1050, batchStatus: 'active', notes: 'Fast moving item', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), trackStock: true, currentStock: 1500, reorderLevel: 200, reorderQuantity: 1000, lastStockUpdate: new Date().toISOString() },
-  { id: 'p2', name: 'House Wire 2.5mm', category: 'Wire', labelSpec: 'FR PVC Wire 2.5 sq mm ISI', actualSpec: '2.1 sq mm FR', unit: 'coil', purchasePrice: 1350, sellingPrice: 1650, batchStatus: 'active', notes: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), trackStock: true, currentStock: 800, reorderLevel: 100, reorderQuantity: 500, lastStockUpdate: new Date().toISOString() },
-  { id: 'p3', name: '3 Core Flexible Cable', category: 'Cable', labelSpec: '3 Core Flex Cable 1.0 sq mm ISI', actualSpec: '0.85 sq mm', unit: 'meter', purchasePrice: 18, sellingPrice: 24, batchStatus: 'trial', notes: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), trackStock: false, currentStock: 0, reorderLevel: 0, reorderQuantity: 0, lastStockUpdate: null },
-  { id: 'p4', name: 'Main Switch Wire 4mm', category: 'Wire', labelSpec: 'FR Wire 4 sq mm ISI', actualSpec: '3.5 sq mm FR', unit: 'coil', purchasePrice: 1950, sellingPrice: 2450, batchStatus: 'active', notes: 'High margin', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), trackStock: true, currentStock: 45, reorderLevel: 50, reorderQuantity: 100, lastStockUpdate: new Date().toISOString() },
-  { id: 'p5', name: 'Earth Wire 1.5mm', category: 'Wire', labelSpec: 'Earth Wire Green 1.5 sq mm', actualSpec: '1.2 sq mm', unit: 'coil', purchasePrice: 750, sellingPrice: 900, batchStatus: 'discontinued', notes: 'Switching to new supplier soon', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), trackStock: false, currentStock: 0, reorderLevel: 0, reorderQuantity: 0, lastStockUpdate: null }
-];
-
-const NEW_CUSTOMERS_DATA = [
-  { id: 'c1', companyName: 'Sharma Electricals', contactPerson: 'Ravi Sharma', phone: '9876543210', city: 'Delhi', address: '123 Market Road', creditLimit: 50000, paymentTerms: '30 din', notes: '', createdAt: new Date().toISOString(), pricingTier: 'standard', customDiscountPercent: 0, specialPrices: [] },
-  { id: 'c2', companyName: 'Gupta Hardware', contactPerson: 'Amit Gupta', phone: '9876543211', city: 'Noida', address: 'Sector 5', creditLimit: 20000, paymentTerms: 'immediate', notes: '', createdAt: new Date().toISOString(), pricingTier: 'standard', customDiscountPercent: 0, specialPrices: [] },
-  { id: 'c3', companyName: 'Balaji Projects', contactPerson: 'Suresh Kumar', phone: '9876543212', city: 'Gurgaon', address: 'Industrial Area', creditLimit: 100000, paymentTerms: '60 din', notes: '', createdAt: new Date().toISOString(), pricingTier: 'standard', customDiscountPercent: 0, specialPrices: [] },
-];
-
-const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-const fortyDaysAgo = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
-const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-
-const NEW_SALES_DATA = [
-  // Sharma Electricals (c1) aging simulations
-  { id: 's_old1', saleNumber: 'SALE-001', date: ninetyDaysAgo, customerId: 'c1', customerName: 'Sharma Electricals', saleMode: 'pukka', items: [], subtotal: 15000, discount: 0, total: 15000, paymentType: 'credit', cashReceived: 0, creditAmount: 15000, notes: '', createdAt: ninetyDaysAgo },
-  { id: 's_old2', saleNumber: 'SALE-002', date: fortyDaysAgo, customerId: 'c1', customerName: 'Sharma Electricals', saleMode: 'pukka', items: [], subtotal: 8000, discount: 0, total: 8000, paymentType: 'credit', cashReceived: 0, creditAmount: 8000, notes: '', createdAt: fortyDaysAgo },
-  { id: 's_old3', saleNumber: 'SALE-003', date: tenDaysAgo, customerId: 'c1', customerName: 'Sharma Electricals', saleMode: 'pukka', items: [], subtotal: 5000, discount: 0, total: 5000, paymentType: 'partial', cashReceived: 2000, creditAmount: 3000, notes: '', createdAt: tenDaysAgo },
-  
-  // Balaji Projects (c3)
-  { id: 's_old4', saleNumber: null, date: tenDaysAgo, customerId: 'c3', customerName: 'Balaji Projects', saleMode: 'kachcha', items: [], subtotal: 12500, discount: 0, total: 12500, paymentType: 'credit', cashReceived: 0, creditAmount: 12500, notes: '', createdAt: tenDaysAgo }
-];
-
-const NEW_PAYMENTS_DATA = [
-  // Sharma pays 10,000 against the 15,000 90-day overdue invoice. Leaving 5k overdue + 8k 40-days + 3k 10-days (total 16k current udhaar)
-  { id: 'pay_1', customerId: 'c1', customerName: 'Sharma Electricals', date: fortyDaysAgo, amount: 10000, mode: 'neft', reference: 'NEFT-123', notes: '', createdAt: fortyDaysAgo }
-];
-
-const NEW_BATCHES_DATA = [
-  {
-    id: 'b1',
-    batchNumber: 'BATCH-001',
-    date: Date.now() - 5 * 24 * 60 * 60 * 1000,
-    manufacturerName: 'V-Guard OEM Plt 2',
-    items: [
-      { productId: 'p1', productName: 'House Wire 1.5mm', labelSpec: 'FR PVC Wire 1.5 sq mm ISI', actualSpec: '1.25 sq mm FR Special Run', quantity: 50, costPerUnit: 800, totalCost: 40000 },
-      { productId: 'p3', productName: '3 Core Flexible Cable', labelSpec: '3 Core Flex Cable 1.0 sq mm ISI', actualSpec: '0.80 sq mm', quantity: 1000, costPerUnit: 16, totalCost: 16000 }
-    ],
-    totalCost: 56000,
-    status: 'trial',
-    marketResponse: '',
-    nextAction: 'pending',
-    notes: 'Testing localized copper substitution',
-    createdAt: new Date().toISOString()
-  }
-];
-
 const INITIAL_DATA = {
-  products: NEW_PRODUCTS_DATA,
-  customers: NEW_CUSTOMERS_DATA,
-  sales: NEW_SALES_DATA,
-  payments: NEW_PAYMENTS_DATA,
-  batches: NEW_BATCHES_DATA,
+  products: [],
+  customers: [],
+  sales: [],
+  payments: [],
+  batches: [],
   stockMovements: [],
   priceHistory: [],
   competitorNotes: [],
@@ -107,12 +55,12 @@ export const StoreProvider = ({ children }) => {
 
         // Migration: Ensure customers has creditLimit indicating new schema natively
         if (parsed.customers && parsed.customers.length > 0 && typeof parsed.customers[0] === 'object' && parsed.customers[0].creditLimit === undefined) {
-          parsed.customers = NEW_CUSTOMERS_DATA;
-          parsed.sales = NEW_SALES_DATA;
-          parsed.payments = NEW_PAYMENTS_DATA;
+          parsed.customers = [];
+          parsed.sales = [];
+          parsed.payments = [];
         }
         if (!parsed.batches || !Array.isArray(parsed.batches)) {
-          parsed.batches = NEW_BATCHES_DATA;
+          parsed.batches = [];
         }
         
         // Ensure core arrays exist
@@ -173,11 +121,11 @@ export const StoreProvider = ({ children }) => {
 
   const data = {
     ...localData,
-    products: parsedProducts.length > 0 ? parsedProducts : localData.products,
-    customers: parsedCustomers.length > 0 ? parsedCustomers : localData.customers,
-    sales: parsedSales.length > 0 ? parsedSales : localData.sales,
-    payments: parsedPayments.length > 0 ? parsedPayments : localData.payments,
-    batches: parsedBatches.length > 0 ? parsedBatches : localData.batches
+    products: parsedProducts,
+    customers: parsedCustomers,
+    sales: parsedSales,
+    payments: parsedPayments,
+    batches: parsedBatches
   };
 
   const setData = (updater) => setLocalData(updater);
