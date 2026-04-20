@@ -4,14 +4,10 @@ import { Settings as SettingsIcon, Save, Eye, EyeOff, KeyRound, CheckCircle2, XC
 
 export default function Settings() {
   const { data, setItem, overrideData, wipeData } = useStore();
-  const [apiKey, setApiKey] = useState(data.settings?.geminiApiKey || '');
   const [companyName, setCompanyName] = useState(data.settings?.companyName || '');
   const [ownerName, setOwnerName] = useState(data.settings?.ownerName || '');
-  
-  const [showKey, setShowKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState('');
-  const [testState, setTestState] = useState('idle'); // idle | testing | success | error
 
   const [deleteInput, setDeleteInput] = useState('');
   const fileInputRef = useRef(null);
@@ -21,9 +17,7 @@ export default function Settings() {
     const updatedSettings = {
       ...data.settings,
       companyName,
-      ownerName,
-      geminiApiKey: apiKey.trim(),
-      geminiModel: data.settings?.geminiModel || ''
+      ownerName
     };
     setItem('settings', updatedSettings);
     
@@ -34,72 +28,7 @@ export default function Settings() {
     }, 500);
   };
 
-  const testApiKey = async () => {
-    const keyToTest = apiKey.trim();
-    if (!keyToTest) {
-      setTestState('error');
-      return;
-    }
-    
-    setTestState('testing');
-    try {
-      const modelsResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keyToTest}`);
-      if (!modelsResp.ok) {
-        const errJson = await modelsResp.json();
-        setTestState('error');
-        setToast(`Key Error: ${errJson.error?.message || 'Invalid API Key'}`);
-        setTimeout(() => setToast(''), 5000);
-        return;
-      }
-      
-      const modelsJson = await modelsResp.json();
-      const validModels = modelsJson.models.filter(m => m.supportedGenerationMethods?.includes('generateContent'));
-      
-      if (validModels.length === 0) {
-        setTestState('error');
-        setToast('No valid models found for this API Key.');
-        return;
-      }
 
-      let selectedModel = validModels.find(m => m.name.includes('flash'))?.name;
-      if (!selectedModel) {
-        selectedModel = validModels[0].name;
-      }
-
-      const modelId = selectedModel.replace('models/', '');
-
-      const updatedSettings = {
-        ...data.settings,
-        companyName,
-        ownerName,
-        geminiApiKey: keyToTest,
-        geminiModel: modelId
-      };
-      setItem('settings', updatedSettings);
-
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${keyToTest}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: "Respond with the word SUCCESS" }] }] })
-      });
-      
-      if (resp.ok) {
-        setTestState('success');
-        setToast(`Connected! Auto-configured model: ${modelId}`);
-        setTimeout(() => setToast(''), 5000);
-      } else {
-        const errJson = await resp.json();
-        setTestState('error');
-        setToast(`Connection Failed: ${errJson.error?.message || 'Invalid API Key'}`);
-        setTimeout(() => setToast(''), 5000);
-      }
-    } catch (error) {
-      console.error(error);
-      setTestState('error');
-      setToast(`Network Error: ${error.message}`);
-      setTimeout(() => setToast(''), 4000);
-    }
-  };
 
   const handleExportData = () => {
     // We export the entire 'data' store securely.
@@ -171,49 +100,9 @@ export default function Settings() {
           </h2>
         </div>
         
-        <div className="p-6 space-y-6">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Google Gemini API Key</label>
-              <div className="relative flex">
-                <input 
-                  type={showKey ? 'text' : 'password'} 
-                  value={apiKey} 
-                  onChange={(e) => { setApiKey(e.target.value); setTestState('idle'); }}
-                  className="w-full pl-4 pr-12 py-3 border border-slate-300 rounded-l-lg bg-slate-50 focus:ring-2 focus:ring-indigo-600 outline-none font-mono text-sm tracking-widest text-slate-800" 
-                  placeholder="AIzaSy..."
-                />
-                <button 
-                  type="button" 
-                  onClick={() => setShowKey(!showKey)} 
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showKey ? <EyeOff className="w-5 h-5"/> : <Eye className="w-5 h-5"/>}
-                </button>
-              </div>
-              <p className="text-xs text-slate-500 mt-2 font-medium">Free API key milega: <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">aistudio.google.com/app/apikey</a>. Safely stored strictly in LocalStorage.</p>
-            </div>
-            
-            <div className="pt-2 flex items-center gap-4">
-              <button 
-                onClick={testApiKey}
-                disabled={testState === 'testing' || !apiKey}
-                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
-              >
-                {testState === 'testing' ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Test Connection'}
-              </button>
-              
-              {testState === 'success' && (
-                <span className="flex items-center text-sm font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-md border border-emerald-200">
-                  <CheckCircle2 className="w-4 h-4 mr-1.5" /> API Key Verified
-                </span>
-              )}
-              {testState === 'error' && (
-                <span className="flex items-center text-sm font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-md border border-rose-200">
-                  <XCircle className="w-4 h-4 mr-1.5" /> Invalid Key or Network Error
-                </span>
-              )}
-            </div>
+        <div className="p-6">
+          <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-700 font-medium">
+            AI Assistant server pe configured hai — koi key dalni nahi.
           </div>
         </div>
       </div>
