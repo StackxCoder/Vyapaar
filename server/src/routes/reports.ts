@@ -3,20 +3,23 @@ import { db } from '../db'
 import { sales, payments, products, customers } from '../db/schema'
 import { sql, gte, and, eq } from 'drizzle-orm'
 import { ok } from '../lib/response'
+import { authenticate, AuthRequest } from '../middleware/authenticate'
 
 const router = Router()
 
-router.get('/pl/:year/:month', async (req, res, next) => {
+router.get('/pl/:year/:month', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
     const { year, month } = req.params
     const start = new Date(Number(year), Number(month)-1, 1)
     const end = new Date(Number(year), Number(month), 1)
     const monthSales = await db.select().from(sales)
-      .where(and(gte(sales.date, start), sql`${sales.date} < ${end}`))
+      .where(and(eq(sales.userId, authReq.userId!), gte(sales.date, start), sql`${sales.date} < ${end}`))
     const revenue = monthSales.reduce((s, sale) => s + Number(sale.total), 0)
     const cash = monthSales.reduce((s, sale) => s + Number(sale.cashReceived), 0)
     const credit = monthSales.reduce((s, sale) => s + Number(sale.creditAmount), 0)
     const allProducts = await db.select().from(products)
+      .where(eq(products.userId, authReq.userId!))
     let cogs = 0
     monthSales.forEach(sale => {
       const items = sale.items as any[]
@@ -29,11 +32,15 @@ router.get('/pl/:year/:month', async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
-router.get('/udhaar-aging', async (req, res, next) => {
+router.get('/udhaar-aging', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
-    const allCustomers = await db.select().from(customers).where(eq(customers.isActive, true))
+    const allCustomers = await db.select().from(customers)
+      .where(and(eq(customers.userId, authReq.userId!), eq(customers.isActive, true)))
     const allSales = await db.select().from(sales)
+      .where(eq(sales.userId, authReq.userId!))
     const allPayments = await db.select().from(payments)
+      .where(eq(payments.userId, authReq.userId!))
     const today = new Date()
     const result = allCustomers.map(c => {
       const creditSales = allSales.filter(s => s.customerId === c.id)

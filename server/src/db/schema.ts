@@ -1,10 +1,31 @@
-import { pgTable, text, numeric, boolean, timestamp, jsonb, index } from 'drizzle-orm/pg-core'
+import { pgTable, text, numeric, boolean, timestamp, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 import * as crypto from 'node:crypto' // for randomUUID fallback if needed or let DB handle it. Actually the user's snippet uses crypto.randomUUID() which is global in modern node.
 
+// ─── USERS (shop owners) ─────────────────────────────────
+export const users = pgTable('users', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  companyName: text('company_name').notNull(),
+  ownerName: text('owner_name').notNull(),
+  phone: text('phone').default(''),
+  city: text('city').default(''),
+  plan: text('plan').notNull().default('free'),
+  isActive: boolean('is_active').notNull().default(true),
+  onboardingComplete: boolean('onboarding_complete').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ({
+  emailIdx: uniqueIndex('users_email_idx').on(t.email),
+}))
+
+export type User = typeof users.$inferSelect
+export type NewUser = typeof users.$inferInsert
 // ─── PRODUCTS ──────────────────────────────────────────────
 export const products = pgTable('products', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   category: text('category').notNull().default('Wire'),
   labelSpec: text('label_spec').notNull(),
@@ -29,6 +50,7 @@ export const products = pgTable('products', {
 // ─── CUSTOMERS ─────────────────────────────────────────────
 export const customers = pgTable('customers', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   companyName: text('company_name').notNull(),
   contactPerson: text('contact_person').notNull().default(''),
   phone: text('phone').notNull().default(''),
@@ -51,6 +73,7 @@ export const customers = pgTable('customers', {
 // ─── SALES ─────────────────────────────────────────────────
 export const sales = pgTable('sales', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   saleNumber: text('sale_number').unique(),
   date: timestamp('date').notNull().defaultNow(),
   customerId: text('customer_id').references(() => customers.id, { onDelete: 'restrict' }),
@@ -74,6 +97,7 @@ export const sales = pgTable('sales', {
 // ─── PAYMENTS ──────────────────────────────────────────────
 export const payments = pgTable('payments', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   customerId: text('customer_id').notNull().references(() => customers.id, { onDelete: 'restrict' }),
   customerName: text('customer_name').notNull(),
   date: timestamp('date').notNull().defaultNow(),
@@ -90,6 +114,7 @@ export const payments = pgTable('payments', {
 // ─── BATCHES ───────────────────────────────────────────────
 export const batches = pgTable('batches', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   batchNumber: text('batch_number').notNull().unique(),
   date: timestamp('date').notNull().defaultNow(),
   manufacturerName: text('manufacturer_name').notNull(),
@@ -110,6 +135,7 @@ export const batches = pgTable('batches', {
 // ─── STOCK MOVEMENTS ───────────────────────────────────────
 export const stockMovements = pgTable('stock_movements', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   date: timestamp('date').notNull().defaultNow(),
   productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   productName: text('product_name').notNull(),
@@ -130,6 +156,7 @@ export const stockMovements = pgTable('stock_movements', {
 // ─── PRICE HISTORY ─────────────────────────────────────────
 export const priceHistory = pgTable('price_history', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   date: timestamp('date').notNull().defaultNow(),
   purchasePrice: numeric('purchase_price', { precision: 12, scale: 2 }).notNull(),
@@ -138,14 +165,14 @@ export const priceHistory = pgTable('price_history', {
   notes: text('notes').default(''),
 })
 
-// ─── SETTINGS ──────────────────────────────────────────────
 export const settings = pgTable('settings', {
-  id: text('id').primaryKey().default('singleton'),
-  companyName: text('company_name').notNull().default('Mera Vyapaar'),
-  ownerName: text('owner_name').notNull().default('Owner'),
-  geminiApiKey: text('gemini_api_key').default(''),
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  companyName: text('company_name').notNull().default(''),
   address: text('address').default(''),
   phone: text('phone').default(''),
+  gstin: text('gstin').default(''),
+  invoicePrefix: text('invoice_prefix').default('INV'),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 

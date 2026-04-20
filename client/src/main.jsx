@@ -7,6 +7,8 @@ import App from './App.jsx'
 import { StoreProvider } from './store/useStore'
 import { GlobalErrorBoundary } from './components/ui/GlobalError'
 
+import { ToastProvider } from './components/ui/Toast'
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -22,7 +24,9 @@ createRoot(document.getElementById('root')).render(
     <GlobalErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <StoreProvider>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </StoreProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>

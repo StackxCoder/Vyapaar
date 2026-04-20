@@ -5,6 +5,7 @@ import { eq, like, and, or, desc } from 'drizzle-orm'
 import { z } from 'zod'
 import { ok, created } from '../lib/response'
 import { AppError } from '../middleware/errorHandler'
+import { authenticate, AuthRequest } from '../middleware/authenticate'
 
 const router = Router()
 
@@ -24,11 +25,13 @@ const productSchema = z.object({
   notes: z.string().default(''),
 })
 
-router.get('/', async (req, res, next) => {
+router.get('/', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
     const { search, category, status } = req.query
     const results = await db.select().from(products)
       .where(and(
+        eq(products.userId, authReq.userId!),
         eq(products.isActive, true),
         category ? eq(products.category, category as string) : undefined,
         status ? eq(products.batchStatus, status as string) : undefined,
@@ -42,19 +45,24 @@ router.get('/', async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
-    const [product] = await db.select().from(products).where(eq(products.id, req.params.id))
+    const [product] = await db.select().from(products).where(
+      and(eq(products.id, req.params.id), eq(products.userId, authReq.userId!))
+    )
     if (!product) throw new AppError(404, 'Product not found')
     ok(res, product)
   } catch (e) { next(e) }
 })
 
-router.post('/', async (req, res, next) => {
+router.post('/', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
     const data = productSchema.parse(req.body)
     const [product] = await db.insert(products).values({
       ...data,
+      userId: authReq.userId!,
       purchasePrice: data.purchasePrice.toString(),
       sellingPrice: data.sellingPrice.toString(),
       currentStock: data.currentStock.toString(),
@@ -65,13 +73,17 @@ router.post('/', async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
     const data = productSchema.partial().parse(req.body)
-    const [existing] = await db.select().from(products).where(eq(products.id, req.params.id))
+    const [existing] = await db.select().from(products).where(
+      and(eq(products.id, req.params.id), eq(products.userId, authReq.userId!))
+    )
     if (!existing) throw new AppError(404, 'Product not found')
     if (data.purchasePrice !== undefined || data.sellingPrice !== undefined) {
       await db.insert(priceHistory).values({
+        userId: authReq.userId!,
         productId: req.params.id,
         purchasePrice: existing.purchasePrice,
         sellingPrice: existing.sellingPrice,
@@ -88,15 +100,18 @@ router.put('/:id', async (req, res, next) => {
         reorderQuantity: data.reorderQuantity?.toString(),
         updatedAt: new Date() 
       })
-      .where(eq(products.id, req.params.id))
+      .where(and(eq(products.id, req.params.id), eq(products.userId, authReq.userId!)))
       .returning()
     ok(res, updated, 'Product updated')
   } catch (e) { next(e) }
 })
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
-    await db.update(products).set({ isActive: false }).where(eq(products.id, req.params.id))
+    await db.update(products)
+      .set({ isActive: false })
+      .where(and(eq(products.id, req.params.id), eq(products.userId, authReq.userId!)))
     ok(res, null, 'Product deleted')
   } catch (e) { next(e) }
 })

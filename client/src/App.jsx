@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useServerWakeup } from './hooks/useServerWakeup';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -19,6 +19,12 @@ import StockHistory from './pages/stock/StockHistory';
 import CustomerScores from './pages/customers/CustomerScores';
 import StubPage from './pages/StubPage';
 
+// Auth Pages
+import LoginPage from './pages/auth/LoginPage';
+import SignupPage from './pages/auth/SignupPage';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import OnboardingTour from './pages/OnboardingTour';
+
 function App() {
   const { waking } = useServerWakeup();
   
@@ -26,9 +32,15 @@ function App() {
     <BrowserRouter>
       {waking && <div style={{background:'#FAEEDA',color:'#854F0B',textAlign:'center',padding:'8px',fontSize:13,position:'fixed',top:0,width:'100%',zIndex:9999}}>Server shuru ho raha hai... 20-30 seconds mein ready hoga</div>}
       <Routes>
-        <Route path="/sales/print/:id" element={<InvoicePrint />} />
+        {/* PUBLIC ROUTES */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         
-        <Route path="/" element={<Layout />}>
+        {/* PROTECTED ROUTES */}
+        <Route path="/onboarding" element={<ProtectedRoute><OnboardingTour /></ProtectedRoute>} />
+        <Route path="/sales/print/:id" element={<ProtectedRoute><InvoicePrint /></ProtectedRoute>} />
+        
+        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="products" element={<Products />} />
           <Route path="sales" element={<SalesList />} />
@@ -46,6 +58,8 @@ function App() {
           <Route path="ai" element={<AIAssistant />} />
           <Route path="settings" element={<Settings />} />
         </Route>
+        
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

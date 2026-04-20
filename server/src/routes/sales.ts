@@ -5,6 +5,7 @@ import { eq, desc, gte, lte, and, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { ok, created } from '../lib/response'
 import { AppError } from '../middleware/errorHandler'
+import { authenticate, AuthRequest } from '../middleware/authenticate'
 
 const router = Router()
 
@@ -33,11 +34,13 @@ const saleSchema = z.object({
   notes: z.string().default(''),
 })
 
-router.get('/', async (req, res, next) => {
+router.get('/', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
     const { from, to, customerId, mode } = req.query
     const result = await db.select().from(sales)
       .where(and(
+        eq(sales.userId, authReq.userId!),
         from ? gte(sales.date, new Date(from as string)) : undefined,
         to ? lte(sales.date, new Date(to as string)) : undefined,
         customerId ? eq(sales.customerId, customerId as string) : undefined,
@@ -48,36 +51,45 @@ router.get('/', async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
-    const [sale] = await db.select().from(sales).where(eq(sales.id, req.params.id))
+    const [sale] = await db.select().from(sales).where(
+      and(eq(sales.id, req.params.id), eq(sales.userId, authReq.userId!))
+    )
     if (!sale) throw new AppError(404, 'Sale not found')
     ok(res, sale)
   } catch (e) { next(e) }
 })
 
-router.post('/', async (req, res, next) => {
+router.post('/', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
     const data = saleSchema.parse(req.body)
     let saleNumber = null
     if (data.saleMode === 'pukka') {
       const [{ count }] = await db.select({ count: sql`count(*)` }).from(sales)
-        .where(eq(sales.saleMode, 'pukka'))
+        .where(and(eq(sales.saleMode, 'pukka'), eq(sales.userId, authReq.userId!)))
       saleNumber = `SALE-${String(Number(count) + 1).padStart(4, '0')}`
     }
     const [sale] = await db.insert(sales).values({
-      ...data, saleNumber, date: new Date(data.date),
+      ...data, 
+      userId: authReq.userId!,
+      saleNumber, date: new Date(data.date),
       subtotal: data.subtotal.toString(), discount: data.discount.toString(),
       total: data.total.toString(), cashReceived: data.cashReceived.toString(),
       creditAmount: data.creditAmount.toString(),
     }).returning()
     // Auto-deduct stock for tracked products
     for (const item of data.items) {
-      const [product] = await db.select().from(products).where(eq(products.id, item.productId))
+      const [product] = await db.select().from(products).where(
+        and(eq(products.id, item.productId), eq(products.userId, authReq.userId!))
+      )
       if (product?.trackStock) {
         const before = Number(product.currentStock)
         const after = before - item.quantity
         await db.insert(stockMovements).values({
+          userId: authReq.userId!,
           productId: item.productId, productName: item.productName,
           type: 'sale_out', direction: 'out',
           quantity: item.quantity.toString(),

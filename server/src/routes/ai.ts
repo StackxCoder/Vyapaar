@@ -1,26 +1,27 @@
 import { Router } from 'express'
 import { db } from '../db'
 import { sales, payments, customers, products, batches, settings } from '../db/schema'
-import { eq, gte, sql } from 'drizzle-orm'
+import { eq, gte, and } from 'drizzle-orm'
 import { ok } from '../lib/response'
 import { AppError } from '../middleware/errorHandler'
 import { z } from 'zod'
+import { authenticate, AuthRequest } from '../middleware/authenticate'
 
 const router = Router()
 
 // Build real business context from DB
-async function buildContext() {
+async function buildContext(userId: string) {
   const today = new Date()
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
 
   const [allSales, allPayments, allCustomers, allProducts, allBatches, settingsRow] =
     await Promise.all([
-      db.select().from(sales),
-      db.select().from(payments),
-      db.select().from(customers).where(eq(customers.isActive, true)),
-      db.select().from(products).where(eq(products.isActive, true)),
-      db.select().from(batches),
-      db.select().from(settings).limit(1),
+      db.select().from(sales).where(eq(sales.userId, userId)),
+      db.select().from(payments).where(eq(payments.userId, userId)),
+      db.select().from(customers).where(and(eq(customers.userId, userId), eq(customers.isActive, true))),
+      db.select().from(products).where(and(eq(products.userId, userId), eq(products.isActive, true))),
+      db.select().from(batches).where(eq(batches.userId, userId)),
+      db.select().from(settings).where(eq(settings.userId, userId)).limit(1),
     ])
 
   const config = settingsRow[0]
@@ -61,7 +62,6 @@ async function buildContext() {
 
   return {
     companyName: config?.companyName || 'Mera Vyapaar',
-    ownerName: config?.ownerName || 'Owner',
     thisMonth: {
       revenue: Math.round(revenue),
       cashReceived: Math.round(cashIn),
@@ -100,15 +100,16 @@ const chatSchema = z.object({
   })).max(10).default([]),
 })
 
-router.post('/chat', async (req, res, next) => {
+router.post('/chat', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) throw new AppError(503, 'AI service not configured on server')
 
     const { message, history } = chatSchema.parse(req.body)
-    const ctx = await buildContext()
+    const ctx = await buildContext(authReq.userId!)
 
-    const systemPrompt = `You are a smart business assistant for ${ctx.companyName}, an electrical wires and cables wholesale (B2B) business in India, owned by ${ctx.ownerName}.
+    const systemPrompt = `You are a smart business assistant for ${ctx.companyName}, an electrical wires and cables wholesale (B2B) business in India.
 
 LIVE BUSINESS DATA (use these exact numbers in answers):
 This month revenue: ₹${ctx.thisMonth.revenue.toLocaleString('en-IN')}
@@ -141,7 +142,7 @@ RULES:
     ]
 
     const geminiRes = await fetch(
-      \`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\${apiKey}\`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,13 +158,13 @@ RULES:
     )
 
     if (!geminiRes.ok) {
-      const err = await geminiRes.json()
+      const err = await geminiRes.json() as any
       if (err.error?.code === 429) throw new AppError(429, 'AI rate limit — thoda wait karo')
       if (err.error?.code === 400) throw new AppError(400, 'AI config error — server check karo')
       throw new AppError(502, 'AI service error')
     }
 
-    const geminiData = await geminiRes.json()
+    const geminiData = await geminiRes.json() as any
     const reply = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
 
     if (!reply) throw new AppError(502, 'AI ne koi jawab nahi diya')
@@ -173,15 +174,16 @@ RULES:
 })
 
 // Quick alert generation for dashboard
-router.get('/alerts', async (req, res, next) => {
+router.get('/alerts', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
-    const ctx = await buildContext()
+    const ctx = await buildContext(authReq.userId!)
     const alerts: { type: string; message: string; severity: string }[] = []
 
     ctx.udhaar.overdue60.forEach(c => {
       alerts.push({
         type: 'udhaar',
-        message: \`\${c.name} — ₹\${Math.round(c.udhaar).toLocaleString('en-IN')} — \${c.days} din se pending\`,
+        message: `${c.name} — ₹${Math.round(c.udhaar).toLocaleString('en-IN')} — ${c.days} din se pending`,
         severity: 'high',
       })
     })

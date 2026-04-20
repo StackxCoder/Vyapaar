@@ -35,6 +35,9 @@ app.use((req, res, next) => {
 import { requestLogger } from './middleware/logger'
 app.use(requestLogger)
 
+import authRouter from './routes/auth'
+app.use('/api/auth', authRouter)
+
 app.use('/api/products', productsRouter)
 app.use('/api/customers', customersRouter)
 app.use('/api/sales', salesRouter)
@@ -42,6 +45,9 @@ app.use('/api/payments', paymentsRouter)
 app.use('/api/batches', batchesRouter)
 app.use('/api/reports', reportsRouter)
 app.use('/api/ai', aiRouter)
+
+import settingsRouter from './routes/settings'
+app.use('/api/settings', settingsRouter)
 
 import healthRouter from './routes/health'
 app.use('/api/health', healthRouter)

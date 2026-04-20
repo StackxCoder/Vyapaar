@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { sendChatMessage, ChatMessage } from '../api/ai'
+import { sendChatMessage } from '../api/ai'
 
 const QUICK_PROMPTS = [
   'Is mahine profit kitna hua?',
@@ -11,19 +11,19 @@ const QUICK_PROMPTS = [
 ]
 
 export default function AIAssistant() {
-  const [messages, setMessages] = useState<{ role: 'user'|'ai'; text: string }[]>([
+  const [messages, setMessages] = useState([
     { role: 'ai', text: 'Namaste! Main aapke business ka AI assistant hoon. Business ke baare mein kuch bhi poochho — udhaar, sales, batches, profit sab.' }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const bottomRef = useRef(null)
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-  const getHistory = (): ChatMessage[] =>
+  const getHistory = () =>
     messages.slice(-8).map(m => ({ role: m.role === 'user' ? 'user' : 'model', text: m.text }))
 
-  const send = async (text: string) => {
+  const send = async (text) => {
     if (!text.trim() || loading) return
     setInput('')
     setMessages(prev => [...prev, { role: 'user', text }])
@@ -31,7 +31,7 @@ export default function AIAssistant() {
     try {
       const reply = await sendChatMessage(text, getHistory())
       setMessages(prev => [...prev, { role: 'ai', text: reply }])
-    } catch (e: any) {
+    } catch (e) {
       setMessages(prev => [...prev, {
         role: 'ai',
         text: e.message?.includes('rate limit')

@@ -5,21 +5,9 @@ import { eq, sql, desc, and } from 'drizzle-orm'
 import { z } from 'zod'
 import { ok, created } from '../lib/response'
 import { AppError } from '../middleware/errorHandler'
+import { authenticate, AuthRequest } from '../middleware/authenticate'
 
 const router = Router()
-
-// CRITICAL: Udhaar calculated in SQL — never stored statically
-const getUdhaarSQL = (customerId: string) => sql`
-  COALESCE((
-    SELECT SUM(credit_amount::numeric)
-    FROM sales 
-    WHERE customer_id = ${customerId}
-  ), 0) - COALESCE((
-    SELECT SUM(amount::numeric)
-    FROM payments
-    WHERE customer_id = ${customerId}
-  ), 0)
-`
 
 const customerSchema = z.object({
   companyName: z.string().min(1),
@@ -34,7 +22,8 @@ const customerSchema = z.object({
   notes: z.string().default(''),
 })
 
-router.get('/', async (req, res, next) => {
+router.get('/', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
     const result = await db.select({
       id: customers.id,
@@ -54,13 +43,14 @@ router.get('/', async (req, res, next) => {
         - COALESCE((SELECT SUM(amount::numeric) FROM payments WHERE customer_id = customers.id), 0)
       `.as('udhaar'),
     }).from(customers)
-      .where(eq(customers.isActive, true))
+      .where(and(eq(customers.userId, authReq.userId!), eq(customers.isActive, true)))
       .orderBy(desc(customers.createdAt))
     ok(res, result)
   } catch (e) { next(e) }
 })
 
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
     const [customer] = await db.select({
       id: customers.id,
@@ -80,20 +70,21 @@ router.get('/:id', async (req, res, next) => {
         - COALESCE((SELECT SUM(amount::numeric) FROM payments WHERE customer_id = customers.id), 0)
       `.as('udhaar'),
     }).from(customers)
-      .where(eq(customers.id, req.params.id))
+      .where(and(eq(customers.id, req.params.id), eq(customers.userId, authReq.userId!)))
     
     if (!customer) throw new AppError(404, 'Customer not found')
     ok(res, customer)
   } catch (e) { next(e) }
 })
 
-router.get('/:id/ledger', async (req, res, next) => {
+router.get('/:id/ledger', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
     const salesData = await db.select().from(sales)
-      .where(eq(sales.customerId, req.params.id))
+      .where(and(eq(sales.customerId, req.params.id), eq(sales.userId, authReq.userId!)))
       .orderBy(desc(sales.date))
     const paymentsData = await db.select().from(payments)
-      .where(eq(payments.customerId, req.params.id))
+      .where(and(eq(payments.customerId, req.params.id), eq(payments.userId, authReq.userId!)))
       .orderBy(desc(payments.date))
     const allTx = [
       ...salesData.map(s => ({ ...s, txType: 'sale', amount: s.creditAmount })),
@@ -109,18 +100,22 @@ router.get('/:id/ledger', async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
-router.post('/', async (req, res, next) => {
+router.post('/', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
     const data = customerSchema.parse(req.body)
     const [customer] = await db.insert(customers).values({
-      ...data, creditLimit: data.creditLimit.toString(),
+      ...data, 
+      userId: authReq.userId!,
+      creditLimit: data.creditLimit.toString(),
       customDiscountPercent: data.customDiscountPercent.toString(),
     }).returning()
     created(res, customer)
   } catch (e) { next(e) }
 })
 
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', authenticate, async (req, res, next) => {
+  const authReq = req as AuthRequest
   try {
     const data = customerSchema.partial().parse(req.body)
     const [updated] = await db.update(customers)
@@ -130,7 +125,8 @@ router.put('/:id', async (req, res, next) => {
         customDiscountPercent: data.customDiscountPercent?.toString(),
         updatedAt: new Date() 
       })
-      .where(eq(customers.id, req.params.id)).returning()
+      .where(and(eq(customers.id, req.params.id), eq(customers.userId, authReq.userId!)))
+      .returning()
     ok(res, updated)
   } catch (e) { next(e) }
 })

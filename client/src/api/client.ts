@@ -1,3 +1,5 @@
+import { useAuthStore } from '../store/authStore'
+
 const BASE_URL = import.meta.env.VITE_API_URL || '/api'
 const cache = new Map<string, {data:any, ts:number}>()
 
@@ -10,15 +12,25 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     }
   }
 
+  const token = useAuthStore.getState().token
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 15000)
   try {
     const res = await fetch(`${BASE_URL}${path}`, {
-      headers: { 'Content-Type': 'application/json', ...options.headers },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+      },
       signal: controller.signal,
       ...options,
     })
     clearTimeout(timeout)
+    if (res.status === 401) {
+      useAuthStore.getState().logout()
+      window.location.href = '/login'
+      throw new Error('Session expire ho gaya')
+    }
     if (!res.ok) {
       let errMessage = `HTTP ${res.status}`;
       try {
@@ -45,5 +57,6 @@ export const api = {
   get: <T>(p: string) => request<T>(p),
   post: <T>(p: string, b: unknown) => request<T>(p, {method:'POST',body:JSON.stringify(b)}),
   put: <T>(p: string, b: unknown) => request<T>(p, {method:'PUT',body:JSON.stringify(b)}),
+  patch: <T>(p: string, b: unknown) => request<T>(p, {method:'PATCH',body:JSON.stringify(b)}),
   delete: <T>(p: string) => request<T>(p, {method:'DELETE'})
 }
