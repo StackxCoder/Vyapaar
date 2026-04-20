@@ -72,7 +72,7 @@ export default function PaymentDrawer({ isOpen, onClose, customerId }) {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-1">Receive Amount (₹)</label>
-              <input required type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full px-4 py-3 text-lg font-bold border border-emerald-200 bg-emerald-50 text-emerald-800 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0.00" />
+              <input required type="text" inputMode="numeric" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full px-4 py-3 text-lg font-bold border border-emerald-200 bg-emerald-50 text-emerald-800 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0.00" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

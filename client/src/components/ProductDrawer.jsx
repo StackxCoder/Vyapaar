@@ -122,11 +122,11 @@ export default function ProductDrawer({ isOpen, onClose, product, onSave }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Purchase Price</label>
-                <input required type="number" step="0.01" name="purchasePrice" value={formData.purchasePrice} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none" min="0" />
+                <input required type="text" inputMode="numeric" step="0.01" name="purchasePrice" value={formData.purchasePrice} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none" min="0" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Selling Price</label>
-                <input required type="number" step="0.01" name="sellingPrice" value={formData.sellingPrice} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none" min="0" />
+                <input required type="text" inputMode="numeric" step="0.01" name="sellingPrice" value={formData.sellingPrice} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none" min="0" />
               </div>
             </div>
 

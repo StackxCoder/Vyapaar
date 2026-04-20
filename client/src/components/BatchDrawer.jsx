@@ -156,11 +156,11 @@ export default function BatchDrawer({ isOpen, onClose, initialData = null }) {
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-slate-600 mb-1">Quantity</label>
-                  <input type="number" value={qty} onChange={e => setQty(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" placeholder="Qty" />
+                  <input type="text" inputMode="numeric" value={qty} onChange={e => setQty(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" placeholder="Qty" />
                 </div>
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-slate-600 mb-1">Cost Per Unit (₹)</label>
-                  <input type="number" value={costPerUnit} onChange={e => setCostPerUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" placeholder="Cost/Unit" />
+                  <input type="text" inputMode="numeric" value={costPerUnit} onChange={e => setCostPerUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" placeholder="Cost/Unit" />
                 </div>
                 <div className="flex items-end">
                   <button onClick={handleAddItem} className="h-[42px] px-4 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 flex items-center shadow-sm">

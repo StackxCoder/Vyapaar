@@ -1,6 +1,15 @@
 const BASE_URL = import.meta.env.VITE_API_URL || '/api'
+const cache = new Map<string, {data:any, ts:number}>()
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const isGET = !options.method || options.method === 'GET'
+  if (isGET) {
+    const cached = cache.get(path)
+    if (cached && Date.now() - cached.ts < 30000) {
+      return cached.data
+    }
+  }
+
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 15000)
   try {
@@ -24,6 +33,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       throw new Error(errMessage)
     }
     const data = await res.json()
+    if (isGET) cache.set(path, { data: data.data, ts: Date.now() })
     return data.data
   } catch (e: any) {
     clearTimeout(timeout)

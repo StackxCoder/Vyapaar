@@ -364,19 +364,19 @@ export default function Reports() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Salaries Paid</label>
-                  <input type="number" placeholder="₹0" value={currentExpenses.salaries} onChange={(e) => handleExpenseUpdate('salaries', e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium" />
+                  <input type="text" inputMode="numeric" placeholder="₹0" value={currentExpenses.salaries} onChange={(e) => handleExpenseUpdate('salaries', e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Shop / Godown Rent</label>
-                  <input type="number" placeholder="₹0" value={currentExpenses.rent} onChange={(e) => handleExpenseUpdate('rent', e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium" />
+                  <input type="text" inputMode="numeric" placeholder="₹0" value={currentExpenses.rent} onChange={(e) => handleExpenseUpdate('rent', e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Loan EMIs</label>
-                  <input type="number" placeholder="₹0" value={currentExpenses.emi} onChange={(e) => handleExpenseUpdate('emi', e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium" />
+                  <input type="text" inputMode="numeric" placeholder="₹0" value={currentExpenses.emi} onChange={(e) => handleExpenseUpdate('emi', e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Misc / Transport</label>
-                  <input type="number" placeholder="₹0" value={currentExpenses.misc} onChange={(e) => handleExpenseUpdate('misc', e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium" />
+                  <input type="text" inputMode="numeric" placeholder="₹0" value={currentExpenses.misc} onChange={(e) => handleExpenseUpdate('misc', e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium" />
                 </div>
               </div>
             </div>

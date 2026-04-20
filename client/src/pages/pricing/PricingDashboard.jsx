@@ -285,7 +285,7 @@ export default function PricingDashboard() {
                      <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm">
                         <span className="text-slate-400 mr-2 font-bold">Global Discount %:</span>
                         <input 
-                          type="number" 
+                          type="text" inputMode="numeric" 
                           className="w-16 bg-transparent outline-none font-black text-emerald-400" 
                           value={selectedCustomer.customDiscountPercent || 0}
                           onChange={(e) => {
@@ -352,7 +352,7 @@ export default function PricingDashboard() {
                            <td className="p-4 text-center font-black text-indigo-600 print:text-slate-900 print:border-r print:border-slate-300">{formatCurrency(eff.rate)} / {p.unit}</td>
                            <td className="p-4 text-center print:hidden">
                              <input 
-                               type="number" 
+                               type="text" inputMode="numeric" 
                                placeholder="Set override..."
                                className="px-3 py-1.5 border border-slate-200 rounded-lg text-center outline-none focus:border-indigo-400 font-bold"
                                value={currCustom}
@@ -392,7 +392,7 @@ export default function PricingDashboard() {
                 <div className="flex-1">
                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Adjustment (+ / - %)</label>
                    <input 
-                     type="number" 
+                     type="text" inputMode="numeric" 
                      value={bulkPercent} 
                      onChange={e => setBulkPercent(Number(e.target.value))}
                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 outline-none font-bold text-slate-700 text-center"
@@ -511,7 +511,7 @@ export default function PricingDashboard() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Their Quoted Rate (₹)</label>
-                    <input type="number" value={compPrice} onChange={e => setCompPrice(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 outline-none font-bold text-emerald-400 text-lg" />
+                    <input type="text" inputMode="numeric" value={compPrice} onChange={e => setCompPrice(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 outline-none font-bold text-emerald-400 text-lg" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Context / Notes</label>
