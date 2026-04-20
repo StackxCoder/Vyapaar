@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/authStore'
 import { authApi } from '../api/auth'
 import { settingsApi } from '../api/settings'
 import { api } from '../api/client'
-import { CheckCircle2, Building, Package, Users, Map, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react'
+import { CheckCircle2, Building, Package, Users, Map, Sparkles, ArrowRight, ArrowLeft, ShoppingCart, Banknote } from 'lucide-react'
 import './Onboarding.css'
 
 export default function OnboardingTour() {
